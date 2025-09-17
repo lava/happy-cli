@@ -31,7 +31,11 @@ export const initialMachineMetadata: MachineMetadata = {
   happyLibDir: projectPath()
 };
 
-export async function startDaemon(): Promise<void> {
+export interface DaemonOptions {
+  spawnSandbox?: boolean;
+}
+
+export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
   // We don't have cleanup function at the time of server construction
   // Control flow is:
   // 1. Create promise that will resolve when shutdown is requested
@@ -95,6 +99,7 @@ export async function startDaemon(): Promise<void> {
   });
 
   logger.debug('[DAEMON RUN] Starting daemon process...');
+  logger.debug('[DAEMON RUN] Options:', options);
   logger.debugLargeJson('[DAEMON RUN] Environment', getEnvironmentInfo());
 
   // Check if already running
@@ -269,6 +274,7 @@ export async function startDaemon(): Promise<void> {
           cwd: directory,
           detached: true,  // Sessions stay alive when daemon stops
           stdio: ['ignore', 'pipe', 'pipe'],  // Capture stdout/stderr for debugging
+          sandbox: options.spawnSandbox  // Pass sandbox mode to spawnHappyCLI
           env: {
             ...process.env,
             ...extraEnv
@@ -412,6 +418,7 @@ export async function startDaemon(): Promise<void> {
       httpPort: controlPort,
       startTime: new Date().toLocaleString(),
       startedWithCliVersion: packageJson.version,
+      spawnSandbox: options.spawnSandbox
       daemonLogPath: logger.logFilePath
     };
     writeDaemonState(fileState);

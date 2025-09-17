@@ -163,8 +163,17 @@ import { execFileSync } from 'node:child_process'
       return
 
     } else if (daemonSubcommand === 'start') {
+      // Parse flags
+      const spawnSandbox = args.includes('--spawn-sandbox');
+
+      // Build daemon args
+      const daemonArgs = ['daemon', 'start-sync'];
+      if (spawnSandbox) {
+        daemonArgs.push('--spawn-sandbox');
+      }
+
       // Spawn detached daemon process
-      const child = spawnHappyCLI(['daemon', 'start-sync'], {
+      const child = spawnHappyCLI(daemonArgs, {
         detached: true,
         stdio: 'ignore',
         env: process.env
@@ -189,7 +198,9 @@ import { execFileSync } from 'node:child_process'
       }
       process.exit(0);
     } else if (daemonSubcommand === 'start-sync') {
-      await startDaemon()
+      // Parse flags for synchronous start
+      const spawnSandbox = args.includes('--spawn-sandbox');
+      await startDaemon({ spawnSandbox })
       process.exit(0)
     } else if (daemonSubcommand === 'stop') {
       await stopDaemon()
@@ -227,6 +238,7 @@ ${chalk.bold('happy daemon')} - Daemon management
 
 ${chalk.bold('Usage:')}
   happy daemon start              Start the daemon (detached)
+  happy daemon start --spawn-sandbox  Start daemon with sandbox mode for spawned sessions
   happy daemon stop               Stop the daemon (sessions stay alive)
   happy daemon status             Show daemon status
   happy daemon list               List active sessions

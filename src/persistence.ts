@@ -36,6 +36,7 @@ export interface DaemonLocallyPersistedState {
   startedWithCliVersion: string;
   lastHeartbeat?: string;
   daemonLogPath?: string;
+  spawnSandbox?: boolean;
 }
 
 export async function readSettings(): Promise<Settings> {

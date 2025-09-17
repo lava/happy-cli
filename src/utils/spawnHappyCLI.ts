@@ -55,18 +55,25 @@ import { projectPath } from '@/projectPath';
 import { logger } from '@/ui/logger';
 import { existsSync } from 'node:fs';
 
+export interface HappySpawnOptions extends SpawnOptions {
+  sandbox?: boolean;
+}
+
 /**
  * Spawn the Happy CLI with the given arguments in a cross-platform way.
- * 
- * This function bypasses the wrapper script (bin/happy.mjs) and spawns the 
+ *
+ * This function bypasses the wrapper script (bin/happy.mjs) and spawns the
  * actual CLI entrypoint (dist/index.mjs) directly with Node.js, ensuring
  * compatibility across all platforms including Windows.
- * 
+ *
+ * When sandbox mode is enabled, it spawns the happy-sandbox Python tool instead
+ * of directly running Node.js, providing additional isolation for the process.
+ *
  * @param args - Arguments to pass to the Happy CLI
- * @param options - Spawn options (same as child_process.spawn)
+ * @param options - Spawn options (same as child_process.spawn, plus optional sandbox flag)
  * @returns ChildProcess instance
  */
-export function spawnHappyCLI(args: string[], options: SpawnOptions = {}): ChildProcess {
+export function spawnHappyCLI(args: string[], options: HappySpawnOptions = {}): ChildProcess {
   const projectRoot = projectPath();
   const entrypoint = join(projectRoot, 'dist', 'index.mjs');
 
@@ -82,15 +89,8 @@ export function spawnHappyCLI(args: string[], options: SpawnOptions = {}): Child
   // for when "happy" was started and don't care about the underlying node process
   // details and flags we use to achieve the same result.
   const fullCommand = `happy ${args.join(' ')}`;
-  logger.debug(`[SPAWN HAPPY CLI] Spawning: ${fullCommand} in ${directory}`);
-  
-  // Use the same Node.js flags that the wrapper script uses
-  const nodeArgs = [
-    '--no-warnings',
-    '--no-deprecation',
-    entrypoint,
-    ...args
-  ];
+
+  logger.debug(`[SPAWN HAPPY CLI] Spawning: ${fullCommand} in ${directory}${options.sandbox ? ' (with sandbox)' : ''}`);
 
   // Sanity check of the entrypoint path exists
   if (!existsSync(entrypoint)) {
@@ -98,6 +98,32 @@ export function spawnHappyCLI(args: string[], options: SpawnOptions = {}): Child
     logger.debug(`[SPAWN HAPPY CLI] ${errorMessage}`);
     throw new Error(errorMessage);
   }
-  
-  return spawn('node', nodeArgs, options);
+
+  // Extract sandbox option and prepare spawn options without it
+  const { sandbox, ...spawnOptions } = options;
+
+  if (sandbox) {
+    // Use happy-sandbox Python tool from https://github.com/lava/happy-sandbox
+    // happy-sandbox will run: node --no-warnings --no-deprecation entrypoint ...args
+    const sandboxArgs = [
+      'node',
+      '--no-warnings',
+      '--no-deprecation',
+      entrypoint,
+      ...args
+    ];
+
+    logger.debug(`[SPAWN HAPPY CLI] Using happy-sandbox to spawn process`);
+    return spawn('happy-sandbox', sandboxArgs, spawnOptions);
+  } else {
+    // Use the same Node.js flags that the wrapper script uses
+    const nodeArgs = [
+      '--no-warnings',
+      '--no-deprecation',
+      entrypoint,
+      ...args
+    ];
+
+    return spawn('node', nodeArgs, spawnOptions);
+  }
 }
