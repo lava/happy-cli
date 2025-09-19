@@ -1,0 +1,71 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ git
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json yarn.lock ./
+
+# Install all dependencies (including devDependencies for build)
+RUN yarn install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build the project
+RUN yarn build
+
+# Runtime stage
+FROM node:20-alpine
+
+# Install runtime dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Create a non-root user
+RUN addgroup -g 1001 -S happy && \
+    adduser -S happy -u 1001 -G happy
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json yarn.lock ./
+
+# Install only production dependencies
+RUN yarn install --frozen-lockfile --production && \
+    yarn cache clean
+
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/bin ./bin
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/ripgrep ./ripgrep
+
+# Copy entrypoint script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Create necessary directories with correct permissions
+RUN mkdir -p /home/happy/.happy/logs && \
+    chown -R happy:happy /home/happy/.happy && \
+    chown -R happy:happy /app
+
+# Switch to non-root user
+USER happy
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV HAPPY_HOME_DIR=/home/happy/.happy
+
+# Expose the default port (if daemon uses a port)
+EXPOSE 3000
+
+# Health check for daemon status
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node ./bin/happy.mjs daemon status || exit 1
+
+# Use entrypoint script to ensure setup before daemon start
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["node", "./bin/happy.mjs", "daemon", "start", "--start-sync"]
