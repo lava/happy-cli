@@ -188,10 +188,10 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
     };
 
     // Spawn a new session (sessionId reserved for future --resume functionality)
-    const spawnSession = async (options: SpawnSessionOptions): Promise<SpawnSessionResult> => {
-      logger.debugLargeJson('[DAEMON RUN] Spawning session', options);
+    const spawnSession = async (spawnOptions: SpawnSessionOptions): Promise<SpawnSessionResult> => {
+      logger.debugLargeJson('[DAEMON RUN] Spawning session', spawnOptions);
 
-      const { directory, sessionId, machineId, approvedNewDirectoryCreation = true } = options;
+      const { directory, sessionId, machineId, approvedNewDirectoryCreation = true } = spawnOptions;
       let directoryCreated = false;
 
       try {
@@ -241,14 +241,14 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
 
         // Resolve authentication token if provided
         let extraEnv: Record<string, string> = {};
-        if (options.token) {
-          if (options.agent === 'codex') {
+        if (spawnOptions.token) {
+          if (spawnOptions.agent === 'codex') {
 
             // Create a temporary directory for Codex
             const codexHomeDir = tmp.dirSync();
 
             // Write the token to the temporary directory
-            fs.writeFile(join(codexHomeDir.name, 'auth.json'), options.token);
+            fs.writeFile(join(codexHomeDir.name, 'auth.json'), spawnOptions.token);
 
             // Set the environment variable for Codex
             extraEnv = {
@@ -256,14 +256,14 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
             };
           } else { // Assuming claude
             extraEnv = {
-              CLAUDE_CODE_OAUTH_TOKEN: options.token
+              CLAUDE_CODE_OAUTH_TOKEN: spawnOptions.token
             };
           }
         }
 
         // Construct arguments for the CLI
         const args = [
-          options.agent === 'claude' ? 'claude' : 'codex',
+          spawnOptions.agent === 'claude' ? 'claude' : 'codex',
           '--happy-starting-mode', 'remote',
           '--started-by', 'daemon'
         ];
@@ -274,7 +274,7 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
           cwd: directory,
           detached: true,  // Sessions stay alive when daemon stops
           stdio: ['ignore', 'pipe', 'pipe'],  // Capture stdout/stderr for debugging
-          sandbox: options.spawnSandbox,  // Pass sandbox mode to spawnHappyCLI
+          sandbox: options.spawnSandbox,  // Pass daemon's sandbox mode to spawnHappyCLI
           env: {
             ...process.env,
             ...extraEnv

@@ -2,13 +2,19 @@
 FROM node:20-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache python3 make g++ git
+RUN apk add --no-cache python3 make g++ git tar
 
 WORKDIR /app
 
 # Copy package files
 COPY package.json yarn.lock ./
 
+# Copy tools and scripts for unpacking
+COPY tools ./tools
+COPY scripts ./scripts
+
+# Unpack platform-specific tools (ripgrep, difftastic, etc.)
+RUN node ./scripts/unpack-tools.cjs
 
 # Copy source code
 COPY . .
@@ -36,7 +42,9 @@ COPY package.json yarn.lock ./
 
 # Copy scripts needed for postinstall
 COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/ripgrep ./ripgrep
+
+# Copy unpacked tools from builder
+COPY --from=builder /app/tools/unpacked ./tools/unpacked
 
 # Install only production dependencies
 RUN yarn install --frozen-lockfile --production && \
