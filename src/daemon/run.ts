@@ -274,7 +274,7 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
           cwd: directory,
           detached: true,  // Sessions stay alive when daemon stops
           stdio: ['ignore', 'pipe', 'pipe'],  // Capture stdout/stderr for debugging
-          sandbox: options.spawnSandbox  // Pass sandbox mode to spawnHappyCLI
+          sandbox: options.spawnSandbox,  // Pass sandbox mode to spawnHappyCLI
           env: {
             ...process.env,
             ...extraEnv
@@ -418,7 +418,7 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
       httpPort: controlPort,
       startTime: new Date().toLocaleString(),
       startedWithCliVersion: packageJson.version,
-      spawnSandbox: options.spawnSandbox
+      spawnSandbox: options.spawnSandbox,
       daemonLogPath: logger.logFilePath
     };
     writeDaemonState(fileState);
