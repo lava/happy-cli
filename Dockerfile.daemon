@@ -13,14 +13,15 @@ COPY package.json yarn.lock ./
 COPY tools ./tools
 COPY scripts ./scripts
 
-# Unpack platform-specific tools (ripgrep, difftastic, etc.)
-RUN node ./scripts/unpack-tools.cjs
 
 # Copy source code
 COPY . .
 
 # Install all dependencies (including devDependencies for build)
 RUN yarn install --frozen-lockfile
+
+# Unpack platform-specific tools (ripgrep, difftastic, etc.)
+RUN node ./scripts/unpack-tools.cjs
 
 # Build the project
 RUN yarn build
