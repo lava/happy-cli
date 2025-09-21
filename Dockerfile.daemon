@@ -79,4 +79,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Use entrypoint script to ensure setup before daemon start
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["node", "./bin/happy.mjs", "daemon", "start", "--start-sync"]
+CMD ["node", "./bin/happy.mjs", "daemon", "start-sync"]
