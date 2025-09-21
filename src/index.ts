@@ -163,8 +163,8 @@ import { execFileSync } from 'node:child_process'
       return
 
     } else if (daemonSubcommand === 'start') {
-      // Parse flags
-      const spawnSandbox = args.includes('--spawn-sandbox');
+      // Parse flags - check CLI arg or environment variable
+      const spawnSandbox = args.includes('--spawn-sandbox') || process.env.HAPPY_SPAWN_SANDBOX === 'true';
 
       // Build daemon args
       const daemonArgs = ['daemon', 'start-sync'];
@@ -198,8 +198,8 @@ import { execFileSync } from 'node:child_process'
       }
       process.exit(0);
     } else if (daemonSubcommand === 'start-sync') {
-      // Parse flags for synchronous start
-      const spawnSandbox = args.includes('--spawn-sandbox');
+      // Parse flags for synchronous start - check CLI arg or environment variable
+      const spawnSandbox = args.includes('--spawn-sandbox') || process.env.HAPPY_SPAWN_SANDBOX === 'true';
       await startDaemon({ spawnSandbox })
       process.exit(0)
     } else if (daemonSubcommand === 'stop') {

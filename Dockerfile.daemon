@@ -28,8 +28,8 @@ RUN yarn build
 # Runtime stage
 FROM node:20-alpine
 
-# Install runtime dependencies
-RUN apk add --no-cache git ca-certificates
+# Install runtime dependencies including Python and Docker for happy-sandbox
+RUN apk add --no-cache git ca-certificates python3 py3-pip docker-cli
 
 # Create a non-root user
 RUN addgroup -g 1001 -S happy && \
@@ -53,6 +53,9 @@ RUN yarn install --frozen-lockfile --production && \
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bin ./bin
+
+# Install happy-sandbox directly from GitHub (as root before switching to non-root user)
+RUN pip3 install --break-system-packages git+https://github.com/lava/happy-sandbox.git
 
 # Copy entrypoint script
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
