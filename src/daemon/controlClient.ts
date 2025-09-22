@@ -121,6 +121,12 @@ export async function checkIfDaemonRunningAndCleanupStaleState(): Promise<boolea
     return false;
   }
 
+  // Check if the daemon PID is different from current process
+  if (state.pid === process.pid) {
+    logger.debug('[DAEMON RUN] Daemon PID matches current process, daemon not running externally');
+    return false;
+  }
+
   // Check if the daemon is running
   try {
     process.kill(state.pid, 0);
