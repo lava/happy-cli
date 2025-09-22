@@ -166,10 +166,20 @@ import { execFileSync } from 'node:child_process'
       // Parse flags - check CLI arg or environment variable
       const spawnSandbox = args.includes('--spawn-sandbox') || process.env.HAPPY_SPAWN_SANDBOX === 'true';
 
+      // Parse repo option
+      let repo: string | undefined;
+      const repoIndex = args.indexOf('--repo');
+      if (repoIndex !== -1 && repoIndex + 1 < args.length) {
+        repo = args[repoIndex + 1];
+      }
+
       // Build daemon args
       const daemonArgs = ['daemon', 'start-sync'];
       if (spawnSandbox) {
         daemonArgs.push('--spawn-sandbox');
+      }
+      if (repo) {
+        daemonArgs.push('--repo', repo);
       }
 
       // Spawn detached daemon process
@@ -200,7 +210,15 @@ import { execFileSync } from 'node:child_process'
     } else if (daemonSubcommand === 'start-sync') {
       // Parse flags for synchronous start - check CLI arg or environment variable
       const spawnSandbox = args.includes('--spawn-sandbox') || process.env.HAPPY_SPAWN_SANDBOX === 'true';
-      await startDaemon({ spawnSandbox })
+
+      // Parse repo option
+      let repo: string | undefined;
+      const repoIndex = args.indexOf('--repo');
+      if (repoIndex !== -1 && repoIndex + 1 < args.length) {
+        repo = args[repoIndex + 1];
+      }
+
+      await startDaemon({ spawnSandbox, repo })
       process.exit(0)
     } else if (daemonSubcommand === 'stop') {
       await stopDaemon()
@@ -239,6 +257,7 @@ ${chalk.bold('happy daemon')} - Daemon management
 ${chalk.bold('Usage:')}
   happy daemon start              Start the daemon (detached)
   happy daemon start --spawn-sandbox  Start daemon with sandbox mode for spawned sessions
+  happy daemon start --repo <path>    Start daemon with custom repo for sandbox
   happy daemon stop               Stop the daemon (sessions stay alive)
   happy daemon status             Show daemon status
   happy daemon list               List active sessions

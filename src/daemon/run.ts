@@ -33,6 +33,7 @@ export const initialMachineMetadata: MachineMetadata = {
 
 export interface DaemonOptions {
   spawnSandbox?: boolean;
+  repo?: string;
 }
 
 export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
@@ -277,7 +278,8 @@ export async function startDaemon(options: DaemonOptions = {}): Promise<void> {
           sandbox: options.spawnSandbox,  // Pass daemon's sandbox mode to spawnHappyCLI
           env: {
             ...process.env,
-            ...extraEnv
+            ...extraEnv,
+            ...(options.repo ? { HAPPY_SANDBOX_REPO: options.repo } : {})
           }
         });
 
