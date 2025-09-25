@@ -371,22 +371,26 @@ ${chalk.bold.cyan('Claude Code Options (from `claude --help`):')}
       credentials
     } = await authAndSetupMachineIfNeeded();
 
-    // Always auto-start daemon for simplicity
-    logger.debug('Ensuring Happy background service is running & matches our version...');
+    // Auto-start daemon unless disabled by environment variable
+    if (process.env.HAPPY_DISABLE_DAEMON !== 'true') {
+      logger.debug('Ensuring Happy background service is running & matches our version...');
 
-    if (!(await isDaemonRunningCurrentlyInstalledHappyVersion())) {
-      logger.debug('Starting Happy background service...');
+      if (!(await isDaemonRunningCurrentlyInstalledHappyVersion())) {
+        logger.debug('Starting Happy background service...');
 
-      // Use the built binary to spawn daemon
-      const daemonProcess = spawnHappyCLI(['daemon', 'start-sync'], {
-        detached: true,
-        stdio: 'ignore',
-        env: process.env
-      })
-      daemonProcess.unref();
+        // Use the built binary to spawn daemon
+        const daemonProcess = spawnHappyCLI(['daemon', 'start-sync'], {
+          detached: true,
+          stdio: 'ignore',
+          env: process.env
+        })
+        daemonProcess.unref();
 
-      // Give daemon a moment to write PID & port file
-      await new Promise(resolve => setTimeout(resolve, 200));
+        // Give daemon a moment to write PID & port file
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    } else {
+      logger.debug('Daemon auto-start disabled by HAPPY_DISABLE_DAEMON environment variable');
     }
 
     // Start the CLI
